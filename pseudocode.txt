@@ -1,0 +1,74 @@
+function ClosedLoopKernelGen(task_spec, backend, KKB, LLM, budget):
+    # task_spec: PyTorch function, shapes, constraints, test generator
+    # backend: "nvidia-cuda" | "amd-rocm" | ...
+    # KKB: kernel knowledge base (initially seeded)
+    # LLM: Triton-specialized code model
+    # budget: max number of evaluation steps
+
+    best_kernel   ← None
+    best_reward   ← -∞
+    archive       ← []
+
+    for step in 1..budget:
+
+        # ---------- 1. Retrieve prior knowledge ----------
+        query_embed    ← EmbedOpGraph(task_spec.op_graph, backend)
+        neighbor_kerns ← KKB.retrieve_knn(query_embed, k = K_NEIGHBORS)
+
+        # ---------- 2. Prompt LLM to generate / refine ----------
+        prompt ← BuildPrompt(
+                     task_spec       = task_spec,
+                     backend_profile = DescribeBackend(backend),
+                     exemplars       = neighbor_kerns,
+                     current_best    = best_kernel
+                 )
+
+        candidate_code ← LLM.generate_triton_kernel(prompt)
+
+        # ---------- 3. Compile & run tests ----------
+        compile_ok, compiled_kernel, compile_log ← CompileTriton(candidate_code, backend)
+        if not compile_ok:
+            reward ← -R_COMPILE_FAIL
+            archive.append((candidate_code, reward, "compile_fail"))
+            continue
+
+        tests ← SampleTestcases(task_spec.test_generator, N_TESTS)
+        correct, max_error, runtimes ← RunAndCheck(
+                                           compiled_kernel,
+                                           task_spec.reference_impl,
+                                           tests
+                                       )
+
+        if not correct or max_error > task_spec.tolerance:
+            reward ← -R_INCORRECT
+            archive.append((candidate_code, reward, "incorrect"))
+            continue
+
+        # ---------- 4. Score performance ----------
+        baseline_runtime ← MeasureBaseline(task_spec.reference_impl, tests)
+        median_runtime   ← Median(runtimes)
+        speedup          ← baseline_runtime / median_runtime
+
+        resource_penalty ← ResourceCost(compiled_kernel, backend)
+        stability_score  ← RuntimeVarianceScore(runtimes)
+
+        reward ← (W_SPEEDUP * speedup) +
+                  (W_STABILITY * stability_score) -
+                  (W_RESOURCE * resource_penalty)
+
+        archive.append((candidate_code, reward, "correct"))
+
+        # ---------- 5. Update best + KKB ----------
+        if reward > best_reward:
+            best_reward ← reward
+            best_kernel ← candidate_code
+
+            if speedup ≥ MIN_SPEEDUP and correct:
+                KKB.insert(task_spec.op_graph, backend, candidate_code,
+                           speedup, stability_score)
+
+        # ---------- 6. Optional refinement strategy ----------
+        if ShouldRefine(step, archive, best_reward):
+            task_spec ← UpdateTaskSpecWithHints(task_spec, archive, best_kernel)
+
+    return best_kernel, best_reward, archive
