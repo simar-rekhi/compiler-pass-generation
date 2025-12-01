@@ -2,6 +2,7 @@
 Example script demonstrating how to use the optimization framework.
 """
 import os
+import torch
 from optimizer import KernelOptimizer
 from test_framework import TestFramework
 from knowledge_archive import KnowledgeArchive

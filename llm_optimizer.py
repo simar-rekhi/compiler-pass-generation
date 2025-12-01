@@ -2,9 +2,8 @@
 LLM integration for generating optimization parameter suggestions.
 """
 import os
-import inspect
-from triton_kernels import matmul_kernel, softmax_kernel
 import json
+from pathlib import Path
 from typing import Dict, Any, Optional, List
 from openai import OpenAI
 from triton_kernels import (
@@ -231,8 +230,23 @@ Now suggest optimized parameters:
         return suggested
 
 
-def get_kernel_code(kernel_name):
-    # Adjust the path as needed
-    path = f"triton_kernels/{kernel_name}.py"
-    with open(path, "r") as f:
-        return f.read()
+def get_kernel_code(kernel_name: str) -> str:
+    """
+    Get kernel source code from file.
+    Reads from triton_kernels/{kernel_name}.py
+    """
+    from pathlib import Path
+    
+    path = Path(f"triton_kernels/{kernel_name}.py")
+    
+    if not path.exists():
+        # Fallback: return empty string if file doesn't exist
+        print(f"Warning: Kernel source file not found at {path}")
+        return ""
+    
+    try:
+        with open(path, "r") as f:
+            return f.read()
+    except Exception as e:
+        print(f"Error reading kernel source file {path}: {e}")
+        return ""

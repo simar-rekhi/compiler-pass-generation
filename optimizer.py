@@ -74,7 +74,7 @@ class KernelOptimizer:
         
         # Start with default parameters
         current_params = self.get_default_params()
-        kernel_code = ""
+        kernel_code = get_kernel_code(self.kernel_name)
         tunable_params = self.get_tunable_params()
         
         # Test baseline
