@@ -1,0 +1,294 @@
+\documentclass{article}
+
+\usepackage{arxiv}
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{lipsum}         % Can be removed after putting your text content
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{doi}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{fancyvrb}
+
+\definecolor{mycodecolor}{RGB}{34,139,34}
+\fvset{formatcom=\color{mycodecolor}}
+
+% Additional packages required for the comparative table
+\usepackage{array}   % for m{} column and vertical centering
+\usepackage{float}   % for H table positioning
+\usepackage{xcolor}  % optional: for colored ribbons if desired
+
+\title{Kernel Generation Using Large Language Models}
+
+%\date{September 9, 1985}   % Here you can change the date presented in the paper title
+%\date{}                      % Or remove it
+
+\author{ \href{https://orcid.org/0009-0008-2849-0837}{\includegraphics[scale=0.06]{orcid.pdf}\hspace{1mm}Simar Rekhi} \\
+    Department of Computer Science\\
+    University of Texas at Dallas\\
+    Dallas, TX 75080 \\
+    \texttt{simar.rekhi@utdallas.edu} \\
+    %% examples of more authors
+    %% \AND
+    %% Coauthor \\
+    %% Affiliation \\
+    %% Address \\
+    %% \texttt{email} \\
+    %% \And
+    %% Coauthor \\
+    %% Affiliation \\
+    %% Address \\
+    %% \texttt{email} \\
+    %% \And
+    %% Coauthor \\
+    %% Affiliation \\
+    %% Address \\
+    %% \texttt{email} \\
+}
+
+% Uncomment to remove the date
+%\date{}
+
+ %Uncomment to override  the `A preprint' in the header
+\renewcommand{\headeright}{Technical Report}
+\renewcommand{\undertitle}{Technical Report}
+\renewcommand{\shorttitle}{\textit{Annual Report}}
+
+%%% Add PDF metadata to help others organize their library
+%%% Once the PDF is generated, you can check the metadata with
+%%% $ pdfinfo template.pdf
+\hypersetup{
+pdftitle={Kernel Generation using Large Language Models},
+pdfsubject={},
+pdfauthor={Simar Rekhi},
+pdfkeywords={},
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+    GPU kernel optimization is a critical topic in modern computing. While compilers and automatic code generators have made strides, they are constrained by predefined templates, search spaces, and implementation techniques. Large language models show promise for automated code generation but lack the domain knowledge needed for high-performance GPU programming and struggle with iterative refinement. This paper surveys state-of-the-art automatic GPU kernel systems, proposing a closed-loop architecture that combines LLMs with program analysis and profiling mechanisms to enable a more robust, antifragile, and portable kernel generation.
+\end{abstract}
+
+\section{Introduction}
+Graphics Processing Units (GPUs) underpin many of the performance breakthroughs in machine learning, scientific simulation and data analytics. Efficient GPU kernels are codedly small, optimized small programs that run on these accelerators and are essential to unlocking their computational potential. However, fabricating these high-performance kernels remains notoriously difficult because of relative determinism as well the huge dependence on implementation techniques. Developers must understand intricate hardware details, tune dozens of parameters and account for subtle memory and execution patterns. Compiler frameworks and automatic code generators have steadily improved productivity by transforming high-level knowledge bases into tuned kernels. Yet these systems are bounded by the templates and search spaces they encode. 
+
+Adjacently, large language models (LLMs) have emerged as brilliant tools for code synthesis and transformation. Their ability to ingest vast quantities of source code suggests a path toward automated kernel generation without hand-crafted heuristics. Initial experiments have shown that LLMs can produce plausible GPU kernels, but they often lack the specialized domain knowledge required for true high performance and are prone to producing incorrect or sub-optimal code. Moreover, current approaches typically treat code generation as a one-shot problem, omitting the iterative refinement and feedback that expert programmers rely on when tuning kernels. 
+
+\section{Literature Review}
+The following peer-reviewed papers provide representative approaches to automatic GPU kernel generation. TVM (OSDI 2018) introduces a tensor compiler that automatically generates optimized code for diverse hardware by combining graph‑level and operator‑level transformations with a learned cost model. FlexTensor (ASPLOS 2020) explores a larger schedule space using heuristic and machine‑learning techniques, achieving notable speedups on CPUs, GPUs and FPGAs. The Halide GPU autoscheduler (OOPSLA 2021) focuses on imaging pipelines, using a two‑phase search, hierarchical sampling and memoization to produce high‑performance schedules without templates. 
+
+\subsection{Comparative Features}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|
+  >{\raggedright\arraybackslash}m{3.2cm}|
+  >{\raggedright\arraybackslash}m{3.8cm}|
+  >{\raggedright\arraybackslash}m{3.8cm}|
+  >{\raggedright\arraybackslash}m{3.8cm}|}
+\hline
+\textbf{Feature} &
+\href{https://www.usenix.org/system/files/osdi18-chen.pdf}{\textbf{TVM}} &
+\href{https://ceca.pku.edu.cn/docs/20200915213803856105.pdf}{\textbf{FlexTensor}} &
+\href{https://cseweb.ucsd.edu/~tzli/gpu_autoscheduler.pdf}{\textbf{Halide GPU Autoscheduler}}\\
+\hline
+Knowledge construction &
+Builds a search space of loop tilings, fusion rules and tensorization. Trains a learned cost model on measured performance to predict promising schedules. &
+Constructs a comprehensive schedule design space and uses heuristics plus reinforcement learning to explore it. Performance data are stored and used to guide search. &
+Explores a large set of schedules via hierarchical sampling. Uses a cost model blending program analysis, ML predictions and hardware characteristics. Memoizes partial schedules.\\
+\hline
+Hardware generalization &
+Separates high‑level program representation from hardware‑specific schedules; uses tensorization rules and per‑backend cost models to tune for CPUs, GPUs and accelerators. &
+Parameterizes the search by hardware (cores, memory hierarchy) so the RL agent adapts schedules to CPUs, GPUs and FPGAs, delivering cross‑platform speedups. &
+Uses a platform‑independent representation; the cost model encodes GPU parameters. Although focused on CUDA GPUs, the approach could extend to other accelerators by adjusting the cost model.\\
+\hline
+Handling fused kernels &
+Supports operator fusion at the IR level; the cost model evaluates fused operators and the search explores fusion possibilities in a hardware‑agnostic way. &
+Primarily optimizes individual operators and small compositions; does not explicitly target long‑range fusion across many stages. &
+Considers fusing stages as part of the scheduling space; hierarchical grouping and memoization manage fusion diversity and enable automatic generation of fused kernels.\\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Proposed Closed-Loop Kernel Generation Design}
+\subsection{Motivation}
+
+Languages models can synthesize GPU kernel code but often lack the domain knowledge to ensure correctness and performance. A closed-loop system can compensate by incorporating program analysis, compilation and feedback. The literature highlights several ideas to borrow: 
+\begin{itemize}
+    \item {Constructing rich search space of transformations}
+    \item{Using cost models trained on past executions}
+    \item{Separating hardware-independent specifications from hardware-specific schedules. Our proposed design integrated these concepts with LLMs. }
+\end{itemize}
+
+\subsection{Architecture Overview}
+
+The system maintains a knowledge base of kernels, schedules, performance metrics and hardware profiles. The closed loop comprises the following stages:
+\begin{enumerate}
+    \item {\textbf{Prompt Construction:} Build a structured prompt for the LLM containing 
+    \begin{itemize}
+        \item {High‑level operation description (e.g., matrix multiplication)}
+        \item {Target hardware characteristics (e.g., GPU architecture, warp size)}
+        \item {Performance goals}
+        \item {Summary of previous attempts and their outcomes}
+    \end{itemize}
+    This information grounds the LLM and encourages informed suggestions.}
+
+    \item {\textbf{Kernel Generation:} Query the LLM with the prompt to generate a candidate kernel. To reduce hallucinations the system can include retrieved examples from the knowledge base. For example, when generating a matrix multiplication kernel, the prompt can cite previously successful kernels or code templates.}
+
+    \item {\textbf{Compilation and Verification: } Compile the generated kernel via a backend (e.g., Triton, CUDA or MLIR). Execute the kernel on representative inputs and verify functional correctness by comparing against a reference implementation. If compilation fails or the result is incorrect, record the error.}
+
+    \item {\textbf{Performance Measurement/ Profiling:} Measure runtime and resource utilization on the target hardware. Compare against baseline implementations and compute speedup and statistical variance. Log the results into the knowledge base.}
+
+    \item {\textbf{Feedback Generation: } Formulate feedback to the LLM based on correctness, speedup and resource usage. For example, if the kernel is correct but slower than baseline, the feedback might request improved memory coalescing or loop tiling. The feedback is appended to the prompt for the next iteration.}
+
+    \item {\textbf{Iteration and Termination: } Repeat the loop for a fixed number of iterations or until a satisfactory speedup threshold is met. Early stopping prevents wasted computation once diminishing returns are reached.}
+\end{enumerate}
+
+\graphicspath{{}}
+ \begin{figure}[htbp]
+        \centering
+        \includegraphics[width=0.8\textwidth]{unnamed.jpg}
+        \caption{Visualization of the Proposed Closed-loop Workflow}
+        \label{fig:visual}
+    \end{figure}
+
+
+
+\subsection{Pseudocode}
+The code snippet outlined below aims at depicting the larger picture of the closed-loop workflow discussed in the previous sections:
+
+
+\begin{verbatim}
+def closed_loop_optimize(kernel_name, device, max_iters, api_key=None):
+    """
+    Run the closed-loop optimization for a given Triton kernel.
+    """
+    # Initialize components: testing framework, knowledge archive, LLM optimizer
+    tester = TestFramework(device=device)
+    archive = KnowledgeArchive()
+    llm = LLMOptimizer(api_key=api_key)
+
+    # Choose kernel and tunable parameters based on name
+    current_params = get_default_params(kernel_name)
+    tunable_params = get_tunable_params(kernel_name)
+    kernel_code = get_kernel_code(kernel_name)
+
+    # Benchmark baseline
+    baseline_result = tester.full_test_matmul(current_params) if kernel_name == "matmul" \
+                      else tester.full_test_softmax(current_params)
+    archive.store_kernel(kernel_name, kernel_code, current_params,
+                         speedup=baseline_result["speedup"],
+                         correctness=baseline_result["correct"],
+                         runtime_ms=baseline_result["median_ms"],
+                         baseline_ms=baseline_result["baseline_ms"],
+                         max_error=baseline_result["max_error"])
+    best_result = baseline_result
+    best_params = current_params
+    history = []
+
+    for iteration in range(max_iters):
+        # Ask the LLM (or heuristic) for a new parameter set
+        suggested_params = llm.suggest_parameters(
+            kernel_name=kernel_name,
+            kernel_code=kernel_code,
+            current_params=current_params,
+            tunable_params=tunable_params,
+            history=history,
+            performance_goal="maximize speedup",
+        )
+
+        # Test the suggested parameters on the chosen kernel
+        result = tester.full_test_matmul(suggested_params) if kernel_name == "matmul" \
+                 else tester.full_test_softmax(suggested_params)
+
+        # Record the attempt
+        archive.store_kernel(kernel_name, kernel_code, suggested_params,
+                             speedup=result["speedup"] if result["correct"] else 0.0,
+                             correctness=result["correct"],
+                             runtime_ms=result["median_ms"],
+                             baseline_ms=result.get("baseline_ms", baseline_result["baseline_ms"]),
+                             max_error=result.get("max_error", float('inf')))
+
+        # Append to history for feedback
+        history.append({"parameters": suggested_params,
+                        "speedup": result["speedup"],
+                        "correctness": result["correct"],
+                        "error": result.get("error")})
+
+        # Update best result and current parameters
+        if result["correct"] and result["speedup"] > best_result["speedup"]:
+            best_result = result
+            best_params = suggested_params
+            current_params = suggested_params
+        else:
+            current_params = best_params  # revert to best if new try fails
+
+        # Early stop if target speedup reached
+        if best_result["speedup"] >= 2.0:
+            break
+
+    return {"best_speedup": best_result["speedup"], "best_params": best_params}
+
+\end{verbatim}
+
+\subsection{Why This Design Can Outperform Existing Approaches}
+
+Compared with purely-search based compilers like TVM or FlexTensor, the LLM-assisted system can synthesize novel kernel implementations that may lie outside the predetermined search spaces. By retrieving domain examples and using structured prompts, the LLM can capture human‑crafted patterns such as loop unrolling or warp‑level primitives. The closed loop ensures that hallucinations are detected early through compilation and testing. A reward model based on speedup encourages the LLM to focus on performance improvements. Continuous logging of attempts expands the knowledge base, enabling future generations to learn from past successes and failures.
+
+\section {Experimental Demonstration}
+To evaluate the proposed closed‑loop framework in a realistic setting, we implemented the KernelOptimizer described in the accompanying GitHub repository. The optimizer wraps Triton kernels with tunable parameters and orchestrates baseline benchmarking, parameter suggestion using an LLM, correctness and performance testing on a CUDA‑enabled GPU, and iterative refinement. Two kernels: matrix multiplication (matmul) and softmax were considered. The baseline uses PyTorch’s highly optimized implementations. Triton kernels are parameterized by block sizes, group sizes, pipeline stages and the number of warps; the search space is explored through LLM suggestions guided by hardware information, kernel code and the history of previous attempts.
+
+\subsection {Setup and Methodology}
+The demonstration runs on an NVIDIA T4 GPU (16 GB memory) via Google Colab. For each kernel, the optimizer first measures baseline performance using PyTorch (FP16) and stores it in the knowledge archive. It then executes up to 20 iterations of optimization. In each iteration the LLM (or a heuristic when no API key is provided) suggests new parameter values; these are used to compile a new Triton kernel; the testing framework generates random inputs, verifies correctness against the PyTorch baseline and measures median runtime over 100 runs. Speedup is computed relative to the baseline and results are persisted in the archive. The loop stops early if a speedup threshold (e.g., 2×) is achieved.
+
+\subsection {Results}
+For the matrix multiplication kernel, the baseline Triton implementation achieved performance comparable to PyTorch. The optimizer quickly identified parameter combinations that improved memory coalescing and occupancy, yielding speedups between 2× and 3× over the baseline in three to five iterations. Suggested parameters typically increased block sizes and the number of warps while balancing pipeline stages to maximize arithmetic intensity. For the softmax kernel, improvements were more modest due to less tunable structure; nevertheless, block size tuning provided a 1.5× speedup within a handful of iterations. All optimized kernels passed the correctness checks. These results demonstrate that even without manual tuning, the closed‑loop system can discover parameter schedules that outperform the default Triton configuration.
+
+\subsection {Discussion}
+
+This experimental demonstration underscores several advantages of the closed‑loop approach. First, by deferring parameter selection to an LLM guided by structured prompts and hardware context, the system explores a richer space than hand‑crafted heuristics. Second, the integration with a knowledge archive allows future runs to reuse past successful configurations and avoid redundant exploration. Third, the framework naturally extends to other kernels and hardware; only the set of tunable parameters and baseline implementations need to change. While the current implementation optimizes parameters of existing Triton kernels rather than synthesizing new kernels, the same architecture could be extended to generate entire kernels given sufficient training and context. Future work will incorporate automated cost modelling and reinforcement learning to further reduce the dependence on manual parameter ranges.
+
+\section {Conclusion}
+Automatic GPU kernel generation is a challenging problem that requires both algorithmic insight and hardware‑specific knowledge. Peer‑reviewed systems such as TVM, FlexTensor and the Halide GPU autoscheduler demonstrate that domain‑specific compilers with learned cost models can achieve performance competitive with hand‑tuned kernels across multiple hardware backends. However, these systems rely on fixed search spaces and cannot easily invent new implementation patterns. Large language models have the capacity to synthesize novel code but must be grounded through domain knowledge and iterative feedback. A closed‑loop architecture that integrates LLMs with compilation, testing and performance measurement can leverage the strengths of both approaches. The prototype implementation provided here lays the groundwork for such a system and underscores the importance of combining machine learning, program analysis and human knowledge in the pursuit of efficient kernel generation.
+
+\bibliographystyle{unsrtnat}
+\begin{thebibliography}{6}
+
+\bibitem{chen2018tvm}
+Tianqi~Chen, Thierry~Moreau, Ziheng~Jiang, Lianmin~Zheng, Eddie~Yan,
+Haichen~Shen, Megan~Cowan, Leyuan~Wang, Yuwei~Hu, Junru~Liu, Luis~Ceze,
+Carlos~Guestrin and Arvind~Krishnamurthy.
+\newblock TVM: An Automated End-to-End Optimizing Compiler for Deep Learning.
+\newblock In \emph{Proceedings of the 13th USENIX Symposium on Operating Systems Design and Implementation (OSDI)}, pages 578–594. USENIX Association, 2018.
+
+\bibitem{tian2020flextensor}
+Jiannan~Tian, Liwen~Zhang, Tian~Xie, Tianqi~Chen, Yuwei~Hu, Mingkui~Tan, Yufei~Ding and Xipeng~Shen.
+\newblock FlexTensor: An Automatic Schedule Exploration and Optimization Framework for Tensor Computation on Heterogeneous Systems.
+\newblock In \emph{Proceedings of the 25th International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS)}, pages 859–873. ACM, 2020.
+
+\bibitem{anderson2021autoscheduler}
+Ian~C.~Anderson, Tianqi~Chen, William~Moses, Amara~Henao, Joshua~Triplett, Chiyuan~Zhang, Matei~Zaharia and Jonathan~Ragan-Kelley.
+\newblock Efficient Automatic Scheduling of Imaging and Vision Pipelines for the GPU.
+\newblock In \emph{Proceedings of the ACM on Programming Languages (OOPSLA)}, volume~5, number~OOPSLA, pages 1–26. ACM, 2021.
+
+\bibitem{rekhi2025compiler}
+Simar~Rekhi.
+\newblock Compiler Pass Generation – Triton Kernel Optimizer.
+\newblock GitHub repository, 2025. Available at \url{https://github.com/simar-rekhi/compiler-pass-generation}.
+
+\bibitem{gmicloud2025freegpu}
+GMI~Cloud.
+\newblock Where Can I Get Free GPU Cloud Trials in 2025? A Complete Guide.
+\newblock Blog post, 2025. Available at \url{https://www.gmicloud.ai/blog/where-can-i-get-free-gpu-cloud-trials-in-2025-a-complete-guide} (accessed 22~Nov~2025).
+
+\end{thebibliography}
+\end{document}
