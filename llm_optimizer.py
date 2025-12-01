@@ -233,20 +233,37 @@ Now suggest optimized parameters:
 
 def get_kernel_code(kernel_name: str) -> str:
     """
-    Return the source code for the specified Triton kernel.
-    Handles the fact that Triton-decorated kernels are JITFunction objects.
+    Return the source code for the specified Triton kernel by reading
+    the file directly. This avoids using `inspect.getsource` on JITFunction
+    objects, which causes a TypeError.
     """
+    import triton_kernels
+    # Locate the file containing the kernels
+    file_path = inspect.getfile(triton_kernels)
+    with open(file_path, "r") as f:
+        lines = f.readlines()
+
+    # Extract the kernel code by finding the region between
+    # the @triton.jit decorator and the corresponding wrapper
     if kernel_name == "matmul":
-        try:
-            # Try the decorated function
-            return inspect.getsource(matmul_kernel)
-        except TypeError:
-            # Fall back to the underlying Python function (matmul_kernel.fn)
-            return inspect.getsource(matmul_kernel.fn)
+        start = None
+        end = None
+        for i, line in enumerate(lines):
+            if line.strip().startswith("@triton.jit") and "matmul_kernel" in lines[i+1]:
+                start = i
+            if start is not None and line.strip().startswith("def triton_matmul"):
+                end = i
+                break
+        return "".join(lines[start:end]) if start is not None and end is not None else ""
     elif kernel_name == "softmax":
-        try:
-            return inspect.getsource(softmax_kernel)
-        except TypeError:
-            return inspect.getsource(softmax_kernel.fn)
+        start = None
+        end = None
+        for i, line in enumerate(lines):
+            if line.strip().startswith("@triton.jit") and "softmax_kernel" in lines[i+1]:
+                start = i
+            if start is not None and line.strip().startswith("def triton_softmax"):
+                end = i
+                break
+        return "".join(lines[start:end]) if start is not None and end is not None else ""
     else:
         return ""
