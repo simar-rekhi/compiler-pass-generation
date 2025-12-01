@@ -56,7 +56,8 @@ print("\n" + "="*60)
 print("Testing Kernel Code Loading")
 print("="*60)
 
-from llm_optimizer import get_kernel_code
+# Import from isolated module to avoid any JITFunction inspection issues
+from kernel_code_reader import get_kernel_code
 
 # Test kernel code loading (this will be used by the optimizer)
 matmul_code = get_kernel_code("matmul")

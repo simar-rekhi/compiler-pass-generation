@@ -6,7 +6,9 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 from test_framework import TestFramework
 from knowledge_archive import KnowledgeArchive
-from llm_optimizer import LLMOptimizer, get_kernel_code
+from llm_optimizer import LLMOptimizer
+# Import get_kernel_code from isolated module to avoid JITFunction inspection issues
+from kernel_code_reader import get_kernel_code
 from reporter import Reporter
 from triton_kernels import (
     triton_matmul,
