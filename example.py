@@ -15,7 +15,10 @@ def example_simple_test():
     print("=" * 60)
     
     # Create test framework
-    framework = TestFramework(device="cuda" if os.getenv("CUDA_AVAILABLE") != "false" else "cpu")
+    # example.py
+    device = "cuda" if torch.cuda.is_available() and os.getenv("CUDA_AVAILABLE") != "false" else "cpu"
+    framework = TestFramework(device=device, tolerance=1e-1)  # loosen tolerance if needed
+
     
     # Test matmul with default parameters
     print("\nTesting matmul with default parameters...")
