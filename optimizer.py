@@ -37,7 +37,8 @@ class KernelOptimizer:
         self.max_iterations = max_iterations
         
         # Initialize components
-        self.test_framework = TestFramework(device=device)
+        # Use more lenient tolerance for float16 operations (0.1 instead of 0.01)
+        self.test_framework = TestFramework(device=device, tolerance=0.1)
         self.archive = KnowledgeArchive(archive_dir=archive_dir)
         self.llm_optimizer = LLMOptimizer(api_key=llm_api_key, model=llm_model)
         self.reporter = Reporter(archive=self.archive, test_framework=self.test_framework)
