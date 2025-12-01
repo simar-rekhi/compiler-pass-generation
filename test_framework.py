@@ -91,55 +91,52 @@ class TestFramework:
         max_error = max(all_errors)
         is_correct = max_error < self.tolerance
         return is_correct, max_error, None
-    
-    def benchmark_kernel(
-        self, kernel_func: Callable, *args, warmup: int = 10, runs: int = 100
-    ) -> Dict[str, float]:
-        """
-        Benchmark a kernel function.
-        Returns timing statistics.
-        """
-        # Warmup
-        for _ in range(warmup):
-            try:
-                _ = kernel_func(*args)
-            except Exception:
-                return {"error": True, "median_ms": float('inf')}
-        
-        # Synchronize before timing
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
-        
-        # Actual timing
-        times = []
-        for _ in range(runs):
-            try:
-                start = time.perf_counter()
-                result = kernel_func(*args)
-                if torch.cuda.is_available():
-                    torch.cuda.synchronize()
-                end = time.perf_counter()
-                times.append((end - start) * 1000)  # Convert to milliseconds
-            except Exception:
-                return {"error": True, "median_ms": float('inf')}
-        
-        if not times:
+
+    # test_framework.py
+
+def benchmark_kernel(
+    self, kernel_func: Callable, *args,
+    warmup: int = 10, runs: int = 100, **kwargs
+) -> Dict[str, float]:
+    """
+    Benchmark a kernel function.
+    Returns timing statistics.
+    """
+    # Warmup
+    for _ in range(warmup):
+        try:
+            _ = kernel_func(*args, **kwargs)
+        except Exception:
             return {"error": True, "median_ms": float('inf')}
-        
-        times.sort()
-        median_time = times[len(times) // 2]
-        mean_time = sum(times) / len(times)
-        min_time = min(times)
-        max_time = max(times)
-        
-        return {
-            "error": False,
-            "median_ms": median_time,
-            "mean_ms": mean_time,
-            "min_ms": min_time,
-            "max_ms": max_time,
-            "runs": runs,
-        }
+    # Synchronize before timing
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+    # Actual timing
+    times = []
+    for _ in range(runs):
+        try:
+            start = time.perf_counter()
+            _ = kernel_func(*args, **kwargs)
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            end = time.perf_counter()
+            times.append((end - start) * 1000)  # ms
+        except Exception:
+            return {"error": True, "median_ms": float('inf')}
+    if not times:
+        return {"error": True, "median_ms": float('inf')}
+    times.sort()
+    median_time = times[len(times) // 2]
+    mean_time = sum(times) / len(times)
+    return {
+        "error": False,
+        "median_ms": median_time,
+        "mean_ms": mean_time,
+        "min_ms": min(times),
+        "max_ms": max(times),
+        "runs": runs,
+    }
+
     
     def full_test_matmul(
         self, params: Dict[str, Any],
