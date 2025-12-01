@@ -26,4 +26,6 @@ reports/
 *.txt
 *.json
 !requirements.txt
+colab_notebook.ipynb_code.txt
+colab_notebook_fixed.ipynb_code.txt
 

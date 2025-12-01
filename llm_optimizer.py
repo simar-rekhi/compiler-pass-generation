@@ -3,15 +3,16 @@ LLM integration for generating optimization parameter suggestions.
 """
 import os
 import json
-from pathlib import Path
 from typing import Dict, Any, Optional, List
-from openai import OpenAI
-from triton_kernels import (
-    get_tunable_matmul_params,
-    get_tunable_softmax_params,
-    get_default_matmul_params,
-    get_default_softmax_params,
-)
+
+# Delay OpenAI import until needed
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
+# Don't import from triton_kernels at module level to avoid JITFunction inspection issues
+# These will be imported lazily when needed
 
 
 class LLMOptimizer:
@@ -234,19 +235,17 @@ def get_kernel_code(kernel_name: str) -> str:
     """
     Get kernel source code from file.
     Reads from triton_kernels/{kernel_name}.py
+    Uses basic file I/O to avoid any inspection issues.
     """
-    from pathlib import Path
-    
-    path = Path(f"triton_kernels/{kernel_name}.py")
-    
-    if not path.exists():
-        # Fallback: return empty string if file doesn't exist
-        print(f"Warning: Kernel source file not found at {path}")
-        return ""
+    file_path = f"triton_kernels/{kernel_name}.py"
     
     try:
-        with open(path, "r") as f:
+        # Use basic file operations to avoid any pathlib/inspect issues
+        with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
+    except FileNotFoundError:
+        print(f"Warning: Kernel source file not found at {file_path}")
+        return ""
     except Exception as e:
-        print(f"Error reading kernel source file {path}: {e}")
+        print(f"Error reading kernel source file {file_path}: {e}")
         return ""
