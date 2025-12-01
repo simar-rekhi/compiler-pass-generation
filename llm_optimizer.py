@@ -231,16 +231,6 @@ Now suggest optimized parameters:
         return suggested
 
 
-# Import get_kernel_code from isolated module to avoid JITFunction inspection
-try:
-    from kernel_code_reader import get_kernel_code
-except ImportError:
-    # Fallback if module doesn't exist
-    def get_kernel_code(kernel_name: str) -> str:
-        """Fallback implementation."""
-        file_path = f"triton_kernels/{kernel_name}.py"
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                return f.read()
-        except Exception:
-            return ""
+# Note: get_kernel_code is NOT defined here anymore
+# It should be imported directly from kernel_code_reader module
+# This avoids any JITFunction inspection issues
