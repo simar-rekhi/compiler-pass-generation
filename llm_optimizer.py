@@ -2,6 +2,8 @@
 LLM integration for generating optimization parameter suggestions.
 """
 import os
+import inspect
+from triton_kernels import matmul_kernel, softmax_kernel
 import json
 from typing import Dict, Any, Optional, List
 from openai import OpenAI
@@ -230,14 +232,21 @@ Now suggest optimized parameters:
 
 
 def get_kernel_code(kernel_name: str) -> str:
-    """Get kernel code as string."""
-    from triton_kernels import matmul_kernel, softmax_kernel
-    import inspect
-    
+    """
+    Return the source code for the specified Triton kernel.
+    Handles the fact that Triton-decorated kernels are JITFunction objects.
+    """
     if kernel_name == "matmul":
-        return inspect.getsource(matmul_kernel)
+        try:
+            # Try the decorated function
+            return inspect.getsource(matmul_kernel)
+        except TypeError:
+            # Fall back to the underlying Python function (matmul_kernel.fn)
+            return inspect.getsource(matmul_kernel.fn)
     elif kernel_name == "softmax":
-        return inspect.getsource(softmax_kernel)
+        try:
+            return inspect.getsource(softmax_kernel)
+        except TypeError:
+            return inspect.getsource(softmax_kernel.fn)
     else:
         return ""
-
