@@ -89,6 +89,11 @@ Graphics Processing Units (GPUs) underpin many of the performance breakthroughs 
 
 Adjacently, large language models (LLMs) have emerged as brilliant tools for code synthesis and transformation. Their ability to ingest vast quantities of source code suggests a path toward automated kernel generation without hand-crafted heuristics. Initial experiments have shown that LLMs can produce plausible GPU kernels, but they often lack the specialized domain knowledge required for true high performance and are prone to producing incorrect or sub-optimal code. Moreover, current approaches typically treat code generation as a one-shot problem, omitting the iterative refinement and feedback that expert programmers rely on when tuning kernels. 
 
+
+\section{Scope and Limitations}
+This work focuses on the use of large language models as decision-making agents within a closed-loop optimization framework, rather than as standalone kernel generators. The proposed system operates on existing parameterized GPU kernels and explores optimization spaces defined by tunable parameters exposed by the kernel implementation. While the architecture could be extended to support full kernel synthesis in future work, the present contribution is limited to parameter optimization and schedule refinement of existing kernels. Additionally, experimental evaluation is conducted on a limited set of kernels and a single GPU architecture, and performance portability across diverse hardware platforms and input sizes remains an open challenge. These limitations are discussed explicitly to clarify the scope of the proposed approach and to avoid overstating generality.
+
+
 \section{Literature Review}
 The following peer-reviewed papers provide representative approaches to automatic GPU kernel generation. TVM (OSDI 2018) introduces a tensor compiler that automatically generates optimized code for diverse hardware by combining graph‑level and operator‑level transformations with a learned cost model. FlexTensor (ASPLOS 2020) explores a larger schedule space using heuristic and machine‑learning techniques, achieving notable speedups on CPUs, GPUs and FPGAs. The Halide GPU autoscheduler (OOPSLA 2021) focuses on imaging pipelines, using a two‑phase search, hierarchical sampling and memoization to produce high‑performance schedules without templates. 
 
