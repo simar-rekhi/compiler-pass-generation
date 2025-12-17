@@ -87,7 +87,7 @@ pdfkeywords={},
 \section{Introduction}
 Graphics Processing Units (GPUs) underpin many of the performance breakthroughs in machine learning, scientific simulation and data analytics. Efficient GPU kernels are codedly small, optimized small programs that run on these accelerators and are essential to unlocking their computational potential. However, fabricating these high-performance kernels remains notoriously difficult because of relative determinism as well the huge dependence on implementation techniques. Developers must understand intricate hardware details, tune dozens of parameters and account for subtle memory and execution patterns. Compiler frameworks and automatic code generators have steadily improved productivity by transforming high-level knowledge bases into tuned kernels. Yet these systems are bounded by the templates and search spaces they encode. 
 
-Adjacently, large language models (LLMs) have emerged as brilliant tools for code synthesis and transformation. Their ability to ingest vast quantities of source code suggests a path toward automated kernel generation without hand-crafted heuristics. Initial experiments have shown that LLMs can produce plausible GPU kernels, but they often lack the specialized domain knowledge required for true high performance and are prone to producing incorrect or sub-optimal code. Moreover, current approaches typically treat code generation as a one-shot problem, omitting the iterative refinement and feedback that expert programmers rely on when tuning kernels. 
+In parallel, large language models (LLMs) have emerged as powerful tools for code synthesis and transformation. Their ability to ingest vast quantities of source code suggests a path toward automated kernel generation without hand-crafted heuristics. Initial experiments have shown that LLMs can produce plausible GPU kernels, but they often lack the specialized domain knowledge required for true high performance and are prone to producing incorrect or sub-optimal code. Moreover, current approaches typically treat code generation as a one-shot problem, omitting the iterative refinement and feedback that expert programmers rely on when tuning kernels. 
 
 
 \section{Scope and Limitations}
@@ -308,7 +308,7 @@ class KernelOptimizer:
 
 \subsection{Why This Design Can Outperform Existing Approaches}
 
-Compared with purely-search based compilers like TVM or FlexTensor, the LLM-assisted system offers several advantages. The LLM can synthesize parameter combinations that may lie outside predetermined search spaces, drawing on its training data that includes diverse optimization patterns. By providing complete kernel source code, hardware characteristics and optimization history in structured prompts, the LLM can apply domain knowledge about memory coalescing, occupancy optimization and pipeline tuning. The closed loop ensures that incorrect suggestions are detected early through compilation and correctness testing before performance measurement, preventing wasted computation. A reward signal based on measured speedup encourages the LLM to focus on performance improvements in subsequent iterations. The persistent knowledge archive continuously expands with each optimization run, enabling future sessions to learn from past successes and failures, creating an antifragile system that improves over time. The modular architecture with isolated kernel code reading, dedicated testing framework and comprehensive reporting enables robust operation across different kernels and hardware configurations.
+Compared with purely-search based compilers like TVM or FlexTensor, the LLM-assisted system offers several advantages. The LLM can synthesize parameter combinations that may lie outside predetermined search spaces, drawing on its training data that includes diverse optimization patterns. By providing complete kernel source code, hardware characteristics and optimization history in structured prompts, the LLM can apply domain knowledge about memory coalescing, occupancy optimization and pipeline tuning. The closed loop ensures that incorrect suggestions are detected early through compilation and correctness testing before performance measurement, preventing wasted computation. A reward signal based on measured speedup encourages the LLM to focus on performance improvements in subsequent iterations. The persistent knowledge archive continuously expands with each optimization run, enabling future sessions to learn from past successes and failures, creating an antifragile system that improves over time. The modular architecture with isolated kernel code reading, dedicated testing framework and comprehensive reporting enable a more adaptive and empirically grounded kernel optimization process. 
 
 \section {System Implementation}
 
@@ -330,6 +330,10 @@ This experimental demonstration underscores several advantages of the closed-loo
 \section {Results}
 
 The closed-loop optimization system was evaluated on an NVIDIA Tesla T4 GPU with CUDA 12.6 through a complete optimization run targeting the matrix multiplication kernel. The system successfully demonstrated its ability to explore parameter spaces, validate correctness and measure performance through iterative refinement.
+
+\subsection {Baseline Definitions}
+
+Throughout this section, speedup figures are reported relative to the default Triton kernel implementation (Baseline A). Where comparisons to PyTorch are provided, they are clearly marked as PyTorch-relative figures (Baseline B).
 
 \subsection {Optimization Process}
 
