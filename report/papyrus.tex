@@ -25,7 +25,7 @@
 \usepackage{float}   % for H table positioning
 \usepackage{xcolor}  % optional: for colored ribbons if desired
 
-\title{Kernel Generation Using Large Language Models}
+\title{Closed-Loop GPU Kernel Optimization Using Large Language Models}
 
 %\date{September 9, 1985}   % Here you can change the date presented in the paper title
 %\date{}                      % Or remove it
@@ -65,7 +65,7 @@
 %%% Once the PDF is generated, you can check the metadata with
 %%% $ pdfinfo template.pdf
 \hypersetup{
-pdftitle={Kernel Generation using Large Language Models},
+pdftitle={Closed-Loop GPU Kernel Optimization Using Large Language Models},
 pdfsubject={},
 pdfauthor={Simar Rekhi},
 pdfkeywords={},
@@ -75,7 +75,13 @@ pdfkeywords={},
 \maketitle
 
 \begin{abstract}
-    GPU kernel optimization is a critical topic in modern computing. While compilers and automatic code generators have made strides, they are constrained by predefined templates, search spaces, and implementation techniques. Large language models show promise for automated code generation but lack the domain knowledge needed for high-performance GPU programming and struggle with iterative refinement. This paper surveys state-of-the-art automatic GPU kernel systems, proposing a closed-loop architecture that combines LLMs with program analysis and profiling mechanisms to enable a more robust, antifragile, and portable kernel generation.
+    GPU kernel optimization is a critical challenge in modern high-performance computing, requiring deep domain expertise and extensive empirical tuning to achieve optimal performance across hardware platforms. While compiler frameworks and automatic code generators have made significant progress, they are constrained by predefined search spaces, hand-crafted heuristics, and fixed optimization templates. Recent advances in large language models (LLMs) suggest a complementary approach for reasoning about code and optimization parameters, but naïve one-shot generation often lacks the domain grounding and iterative refinement required for high-performance GPU programming.
+    \newline
+
+    This work proposes a closed-loop architecture for LLM-assisted GPU kernel optimization that integrates large language models with program analysis, automated testing, and performance profiling. Rather than synthesizing kernels from scratch, the system operates on parameterized GPU kernels and iteratively refines optimization parameters using structured LLM prompts informed by kernel source code, hardware characteristics, and historical optimization outcomes. A persistent knowledge archive captures correctness and performance data across optimization runs, enabling feedback-driven refinement and reuse of prior results.
+    \newline
+
+    We implement the proposed framework using Triton kernels and demonstrate its effectiveness on matrix multiplication and softmax workloads on a CUDA-enabled GPU. Experimental results show that the closed-loop system can identify parameter configurations that significantly improve performance over baseline implementations within a small number of iterations, while maintaining correctness through automated validation. This work illustrates how structured feedback loops can ground LLM-driven optimization in empirical performance measurements, providing a practical pathway for integrating language models into GPU kernel optimization workflows.
 \end{abstract}
 
 \section{Introduction}
