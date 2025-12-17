@@ -327,37 +327,57 @@ For the matrix multiplication kernel, the baseline Triton implementation with de
 
 This experimental demonstration underscores several advantages of the closed-loop approach. First, by deferring parameter selection to an LLM guided by structured prompts containing complete kernel source code, hardware characteristics and optimization history, the system explores a richer parameter space than hand-crafted heuristics. The LLM's ability to reason about trade-offs between block sizes, warp counts and pipeline stages enables more informed exploration than random or grid search. Second, the persistent knowledge archive creates an antifragile system that improves over time; future optimization runs can query past successful configurations and learn from historical failures, reducing redundant exploration. The archive's comprehensive metadata enables parameter impact analysis, revealing which optimization dimensions contribute most to performance gains. Third, the modular architecture with isolated components (kernel code reader, testing framework, archive, reporter) naturally extends to other kernels and hardware configurations; only the set of tunable parameters, baseline implementations and kernel-specific functions need modification. The file-based kernel code reading system ensures safe operation by avoiding inspection of compiled kernel objects, enabling reliable code extraction for LLM prompts. The testing framework's automated correctness validation and statistical performance analysis provide robust quality assurance. While the current implementation optimizes parameters of existing Triton kernels rather than synthesizing new kernels from scratch, the same closed-loop architecture could be extended to full kernel generation given sufficient context and training. Future work will incorporate automated cost modeling, reinforcement learning techniques and multi-objective optimization to further reduce dependence on manual parameter ranges and improve exploration efficiency.
 
-\section {Results}
+\section {Results and Evaluation}
+\subsection {Evaluation Setup and Baselines}
 
-The closed-loop optimization system was evaluated on an NVIDIA Tesla T4 GPU with CUDA 12.6 through a complete optimization run targeting the matrix multiplication kernel. The system successfully demonstrated its ability to explore parameter spaces, validate correctness and measure performance through iterative refinement.
-
-\subsection {Baseline Definitions}
-
-Throughout this section, speedup figures are reported relative to the default Triton kernel implementation (Baseline A). Where comparisons to PyTorch are provided, they are clearly marked as PyTorch-relative figures (Baseline B).
+The proposed closed-loop optimization framework is evaluated on a matrix multiplication kernel implemented using Triton. Throughout this section, performance improvements are reported relative to a fixed baseline configuration. The primary baseline is the default Triton kernel parameterization evaluated against a PyTorch reference implementation. All speedup values therefore indicate relative performance improvements with respect to this fixed baseline. Experiments are conducted on a CUDA-enabled NVIDIA Tesla T4 GPU, and runtimes are measured using multiple warmup and timing iterations to reduce measurement noise.
 
 \subsection {Optimization Process}
 
-The optimization process executed 10 iterations following baseline establishment. The baseline configuration using default Triton parameters achieved a speedup of 0.053× relative to the PyTorch reference implementation, corresponding to a runtime of 2.052 milliseconds. This baseline performance indicates that the default Triton configuration, while functionally correct, requires optimization to match or exceed PyTorch's highly optimized implementation.
+The optimization process executed ten iterations following baseline establishment. The baseline configuration, using default Triton parameters, achieved a speedup of 0.053× relative to the PyTorch reference implementation, corresponding to a runtime of 2.052 milliseconds. This baseline performance indicates that while the default Triton configuration is functionally correct, it is substantially slower than PyTorch’s highly optimized implementation for the evaluated workload, motivating further parameter optimization.
 
 \subsection {Iteration Outcomes}
 
-Across the 10 optimization iterations, the system generated 11 total attempts (including baseline). The LLM suggested diverse parameter configurations exploring different combinations of block sizes, group sizes, pipeline stages and warp counts. Of these attempts, 8 passed correctness verification (72.7\% success rate), while 3 configurations failed due to numerical errors exceeding the tolerance threshold. The incorrect configurations primarily featured larger block sizes (128×128) combined with aggressive pipeline settings, suggesting potential register pressure or memory access pattern issues that led to numerical inaccuracies.
+Across the ten optimization iterations, the system generated eleven total configurations, including the baseline. The LLM proposed diverse parameter combinations exploring variations in block sizes, group sizes, pipeline stages, and warp counts.
+
+Of these configurations, eight passed correctness verification, corresponding to a 72.7\% success rate, while three configurations failed correctness checks due to numerical errors exceeding the tolerance threshold. The incorrect configurations predominantly involved larger block sizes (128×128) combined with aggressive pipeline settings, suggesting that increased register pressure or unfavorable memory access patterns contributed to numerical instability.
 
 \subsection {Best Configuration}
 
-The optimization process identified an improved configuration achieving a best speedup of 0.083× with a runtime of 1.757 milliseconds, representing a 56.6\% improvement over the baseline runtime. The optimal parameters were: BLOCK\_SIZE\_M=64, BLOCK\_SIZE\_N=32, BLOCK\_SIZE\_K=32, GROUP\_SIZE\_M=1, num\_stages=2, num\_warps=4. This configuration emphasizes moderate block sizes and minimal grouping, suggesting that for the target problem size, simpler configurations with balanced resource utilization outperform more aggressive parameter settings.
+The optimization process identified an improved configuration achieving a best speedup of 0.083×, with a runtime of 1.757 milliseconds, representing a 56.6\% improvement over the baseline runtime.
+
+The optimal parameter configuration was: \newline
+\begin{itemize}
+\item{BLOCK\_SIZE\_M = 64}
+\item{BLOCK\_SIZE\_N = 32}
+\item{BLOCK\_SIZE\_K = 32}
+\item{GROUP\_SIZE\_M = 1}
+\item{num\_stages = 2}
+\item{num\_warps = 4}
+\end{itemize}
+
+This configuration emphasizes moderate block sizes and minimal grouping, suggesting that for the evaluated problem size, simpler parameterizations with balanced resource utilization outperform more aggressive settings.
 
 \subsection {Performance Analysis}
 
-Parameter impact analysis revealed that changes to BLOCK\_SIZE\_N had the largest average impact on speedup (-0.031×), indicating high sensitivity to the N dimension block size. Changes to num\_warps showed moderate impact (-0.014×), while GROUP\_SIZE\_M, num\_stages and BLOCK\_SIZE\_K demonstrated smaller but measurable effects. The analysis identified several top-performing configurations, with the best achieving 0.083× speedup, followed by configurations with 0.068× and 0.053× speedup respectively. The overall parameter impact values reflect the complexity of kernel optimization and the importance of systematic exploration guided by domain knowledge.
+Parameter impact analysis reveals that modifications to BLOCK\_SIZE\_N exhibit the largest average effect on performance, with an average impact of \textbf{-0.031×}, indicating high sensitivity to the block size in the N dimension. Changes to num\_warps show a moderate average impact of \textbf{-0.014×}, while GROUP\_SIZE\_M, num\_stages, and BLOCK\_SIZE\_K demonstrate smaller but measurable effects.
+\newline
+
+Among the evaluated configurations, the top-performing parameter sets achieved speedups of \textbf{0.083×},\textbf{ 0.068×}, and \textbf{0.053×}, respectively. These results highlight the complexity of GPU kernel optimization and underscore the importance of systematic exploration guided by domain knowledge rather than isolated parameter tuning.
 
 \subsection {Stability Assessment}
 
-Stability analysis across different input sizes revealed limitations in the optimized configuration. While the kernel passed correctness checks for a 512×512×512 matrix multiplication with a speedup of 0.199×, it failed correctness validation for larger problem sizes (1024×1024×1024, 2048×2048×2048 and 4096×4096×4096). This indicates that the parameter configuration, while effective for smaller inputs, requires further tuning or different strategies for larger problem sizes, demonstrating the complexity of achieving portable kernel optimizations across input dimensions. The stability score of 1.000 reflects consistent performance when the kernel is correct, but highlights the need for input-size-aware optimization strategies.
+Stability analysis across varying input sizes reveals limitations in the portability of the optimized configuration. While the kernel passes correctness validation for a \textbf{512 × 512 × 512} matrix multiplication and achieves a speedup of \textbf{0.199×}, it fails correctness checks for larger problem sizes including \textbf{1024 × 1024 × 1024}, \textbf{2048 × 2048 × 2048}, and \textbf{4096 × 4096 × 4096}.
+\newline
+
+These results indicate that the identified parameter configuration, while effective for smaller inputs, does not generalize across larger input dimensions without additional tuning. This behavior highlights the inherent difficulty of achieving portable kernel optimizations and motivates future work on input-size-aware optimization strategies. The reported stability score of \textbf{1.000} reflects consistent performance for configurations that pass correctness verification.
 
 \subsection {System Validation}
 
-The experimental run successfully validated all core system components. The knowledge archive captured all 11 optimization attempts with complete metadata including parameters, speedup metrics, correctness flags and runtime measurements. The LLM optimizer generated diverse parameter suggestions guided by kernel source code and optimization history, demonstrating the effectiveness of structured prompts. The testing framework consistently validated correctness and measured performance with statistical rigor, conducting 5 correctness tests and 100 performance runs per configuration. The reporting system generated comprehensive analysis including parameter impact assessment and stability evaluation. These results demonstrate that the closed-loop architecture functions as designed, providing automated exploration, validation and documentation of kernel optimization processes, while revealing opportunities for further refinement in handling larger input sizes and improving optimization strategies.
+The experimental evaluation successfully validates all core components of the proposed system. The knowledge archive recorded all eleven optimization attempts, capturing complete metadata including kernel parameters, speedup metrics, correctness flags, and runtime measurements. The LLM optimizer generated diverse parameter suggestions informed by kernel source code and prior optimization history, demonstrating the effectiveness of structured prompting.
+\newline
+
+The testing framework consistently verified correctness and measured performance with statistical rigor, executing five correctness tests and 100 performance runs per configuration. The reporting system generated comprehensive analyses, including parameter impact assessments and stability evaluations. Collectively, these results confirm that the closed-loop architecture operates as designed, enabling automated exploration, validation, and documentation of GPU kernel optimization processes, while also exposing opportunities for further refinement in handling larger input sizes.
 
 \section {Conclusion}
 Automatic GPU kernel generation is a challenging problem that requires both algorithmic insight and hardware-specific knowledge. Peer-reviewed systems such as TVM, FlexTensor and the Halide GPU autoscheduler demonstrate that domain-specific compilers with learned cost models can achieve performance competitive with hand-tuned kernels across multiple hardware backends. However, these systems rely on fixed search spaces and cannot easily invent new implementation patterns. Large language models have the capacity to synthesize novel code but must be grounded through domain knowledge and iterative feedback. A closed-loop architecture that integrates LLMs with compilation, testing and performance measurement can leverage the strengths of both approaches. The modular implementation provided here, featuring isolated kernel code management, automated testing frameworks, persistent knowledge archives and comprehensive reporting systems, demonstrates a robust approach to kernel optimization. The file-based kernel code reading system ensures safe operation while the knowledge archive creates an antifragile system that improves through accumulated experience. This work underscores the importance of combining machine learning, program analysis and human knowledge in the pursuit of efficient kernel generation, while demonstrating that structured feedback loops can effectively guide LLMs toward high-performance solutions.
