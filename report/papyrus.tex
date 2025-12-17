@@ -196,119 +196,63 @@ The closed loop comprises the following stages:
 
 
 \subsection{Pseudocode}
-The code snippet outlined below depicts the closed-loop optimization workflow as implemented in the system:
+The closed-loop optimization process can be summarized by the following high-level pseudocode, illustrating the interaction between the LLM, testing framework, and knowledge archive:\newline
 
 \begin{Verbatim}[formatcom=\color{mycodecolor}]
-class KernelOptimizer:
-    def __init__(self, kernel_name, device, max_iterations, llm_api_key):
-        # Initialize components with proper isolation
-        self.test_framework = TestFramework(device=device, tolerance=0.1)
-        self.archive = KnowledgeArchive(archive_dir="archive")
-        self.llm_optimizer = LLMOptimizer(api_key=llm_api_key)
-        self.reporter = Reporter(archive=self.archive, 
-                                test_framework=self.test_framework)
-        
-        # Configure kernel-specific functions and parameters
-        self.kernel_func = get_kernel_function(kernel_name)
-        self.get_tunable_params = get_tunable_params_function(kernel_name)
-        self.get_default_params = get_default_params_function(kernel_name)
-        self.test_func = get_test_function(kernel_name)
-    
-    def optimize(self):
-        # Load kernel code from isolated file reader
-        from kernel_code_reader import get_kernel_code
-        kernel_code = get_kernel_code(self.kernel_name)
-        
-        # Initialize with default parameters
-        current_params = self.get_default_params()
-        tunable_params = self.get_tunable_params()
-        
-        # Establish baseline performance
-        baseline_result = self.test_func(current_params, **input_size)
-        if not baseline_result["correct"]:
-            return {"success": False, "error": "Baseline failed"}
-        
-        # Store baseline in archive
-        self.archive.store_kernel(
-            kernel_name=self.kernel_name,
-            kernel_code=kernel_code,
-            parameters=current_params,
-            speedup=baseline_result["speedup"],
-            correctness=baseline_result["correct"],
-            runtime_ms=baseline_result["median_ms"],
-            baseline_ms=baseline_result["baseline_ms"],
-            max_error=baseline_result["max_error"]
-        )
-        
-        best_result = baseline_result
-        best_params = current_params
-        history = []
-        
-        # Optimization loop
-        for iteration in range(self.max_iterations):
-            # LLM generates parameter suggestions
-            suggested_params = self.llm_optimizer.suggest_parameters(
-                kernel_name=self.kernel_name,
-                kernel_code=kernel_code,
-                current_params=current_params,
-                tunable_params=tunable_params,
-                history=history,
-                performance_goal="maximize speedup"
-            )
-            
-            # Test suggested parameters
-            result = self.test_func(suggested_params, **input_size)
-            
-            # Store attempt in archive
-            self.archive.store_kernel(
-                kernel_name=self.kernel_name,
-                kernel_code=kernel_code,
-                parameters=suggested_params,
-                speedup=result["speedup"] if result["correct"] else 0.0,
-                correctness=result["correct"],
-                runtime_ms=result["median_ms"],
-                baseline_ms=result.get("baseline_ms", baseline_result["baseline_ms"]),
-                max_error=result.get("max_error", float('inf'))
-            )
-            
-            # Update history for feedback
-            history.append({
-                "parameters": suggested_params,
-                "speedup": result["speedup"] if result["correct"] else 0.0,
-                "correctness": result["correct"],
-                "error": result.get("error")
-            })
-            
-            # Update best configuration
-            if result["correct"] and result["speedup"] > best_result["speedup"]:
-                best_result = result
-                best_params = suggested_params
-                current_params = suggested_params
-            else:
-                current_params = best_params  # Revert to best if degraded
-            
-            # Early stopping on target speedup
-            if best_result["speedup"] >= 2.0:
-                break
-        
-        # Generate comprehensive report
-        report = self.reporter.generate_report(
-            self.kernel_name,
-            optimization_results,
-            output_file=f"reports/{self.kernel_name}_report.txt"
-        )
-        
-        return {
-            "success": True,
-            "best_speedup": best_result["speedup"],
-            "best_params": best_params,
-            "iterations": iteration + 1
-        }
+Initialize optimizer with kernel name, target device, and iteration budget
+Load parameterized kernel source code from isolated storage
+Retrieve tunable parameter ranges and default configuration
+
+Evaluate baseline configuration:
+    Execute kernel with default parameters
+    Verify correctness against reference implementation
+    Measure baseline runtime and record results
+    Store baseline entry in knowledge archive
+
+Set current configuration ← baseline configuration
+Set best configuration ← baseline configuration
+
+For each optimization iteration:
+    Construct structured prompt including:
+        - Kernel source code
+        - Hardware characteristics
+        - Current parameter values
+        - Valid parameter ranges
+        - Historical optimization outcomes
+
+    Query LLM to propose new parameter configuration
+    Validate proposed parameters against allowable ranges
+
+    Compile and execute kernel with proposed parameters
+    Verify correctness using automated testing
+
+    If correctness check passes:
+        Measure runtime and compute speedup relative to baseline
+    Else:
+        Assign zero speedup and record failure
+
+    Store optimization attempt and metrics in knowledge archive
+
+    If proposed configuration improves best-known speedup:
+        Update best configuration
+        Set current configuration ← proposed configuration
+    Else:
+        Revert current configuration ← best configuration
+
+    If target speedup or iteration limit is reached:
+        Terminate optimization loop
+
+Generate optimization report summarizing:
+    - Best-performing configuration
+    - Parameter impact analysis
+    - Stability and correctness statistics
 \end{Verbatim}
+
+This abstraction emphasizes the closed-loop nature of the system while remaining independent of any specific programming language or implementation details.
 
 \subsection{Why This Design Can Outperform Existing Approaches}
 
-Compared with purely-search based compilers like TVM or FlexTensor, the LLM-assisted system offers several advantages. The LLM can synthesize parameter combinations that may lie outside predetermined search spaces, drawing on its training data that includes diverse optimization patterns. By providing complete kernel source code, hardware characteristics and optimization history in structured prompts, the LLM can apply domain knowledge about memory coalescing, occupancy optimization and pipeline tuning. The closed loop ensures that incorrect suggestions are detected early through compilation and correctness testing before performance measurement, preventing wasted computation. A reward signal based on measured speedup encourages the LLM to focus on performance improvements in subsequent iterations. The persistent knowledge archive continuously expands with each optimization run, enabling future sessions to learn from past successes and failures, creating an antifragile system that improves over time. The modular architecture with isolated kernel code reading, dedicated testing framework and comprehensive reporting enable a more adaptive and empirically grounded kernel optimization process. 
+Compared with purely-search based compilers like TVM or FlexTensor, the LLM-assisted system offers several advantages. The LLM can synthesize parameter combinations that may lie outside predetermined search spaces, drawing on its training data that includes diverse optimization patterns. By providing complete kernel source code, hardware characteristics and optimization history in structured prompts, the LLM can apply domain knowledge about memory coalescing, occupancy optimization and pipeline tuning. The closed loop ensures that incorrect suggestions are detected early through compilation and correctness testing before performance measurement, preventing wasted computation. A reward signal based on measured speedup encourages the LLM to focus on performance improvements in subsequent iterations. The persistent knowledge archive continuously expands with each optimization run, enabling future sessions to learn from past successes and failures, creating an feedback-driven system that improves over time. The modular architecture with isolated kernel code reading, dedicated testing framework and comprehensive reporting enable a more adaptive and empirically grounded kernel optimization process. 
 
 \section {System Implementation}
 
@@ -325,7 +269,7 @@ For the matrix multiplication kernel, the baseline Triton implementation with de
 
 \subsection {Discussion}
 
-This experimental demonstration underscores several advantages of the closed-loop approach. First, by deferring parameter selection to an LLM guided by structured prompts containing complete kernel source code, hardware characteristics and optimization history, the system explores a richer parameter space than hand-crafted heuristics. The LLM's ability to reason about trade-offs between block sizes, warp counts and pipeline stages enables more informed exploration than random or grid search. Second, the persistent knowledge archive creates an antifragile system that improves over time; future optimization runs can query past successful configurations and learn from historical failures, reducing redundant exploration. The archive's comprehensive metadata enables parameter impact analysis, revealing which optimization dimensions contribute most to performance gains. Third, the modular architecture with isolated components (kernel code reader, testing framework, archive, reporter) naturally extends to other kernels and hardware configurations; only the set of tunable parameters, baseline implementations and kernel-specific functions need modification. The file-based kernel code reading system ensures safe operation by avoiding inspection of compiled kernel objects, enabling reliable code extraction for LLM prompts. The testing framework's automated correctness validation and statistical performance analysis provide robust quality assurance. While the current implementation optimizes parameters of existing Triton kernels rather than synthesizing new kernels from scratch, the same closed-loop architecture could be extended to full kernel generation given sufficient context and training. Future work will incorporate automated cost modeling, reinforcement learning techniques and multi-objective optimization to further reduce dependence on manual parameter ranges and improve exploration efficiency.
+This experimental demonstration underscores several advantages of the closed-loop approach. First, by deferring parameter selection to an LLM guided by structured prompts containing complete kernel source code, hardware characteristics and optimization history, the system explores a richer parameter space than hand-crafted heuristics. The LLM's ability to reason about trade-offs between block sizes, warp counts and pipeline stages enables more informed exploration than random or grid search. Second, the persistent knowledge archive creates an feedback-driven system that improves over time; future optimization runs can query past successful configurations and learn from historical failures, reducing redundant exploration. The archive's comprehensive metadata enables parameter impact analysis, revealing which optimization dimensions contribute most to performance gains. Third, the modular architecture with isolated components (kernel code reader, testing framework, archive, reporter) naturally extends to other kernels and hardware configurations; only the set of tunable parameters, baseline implementations and kernel-specific functions need modification. The file-based kernel code reading system ensures safe operation by avoiding inspection of compiled kernel objects, enabling reliable code extraction for LLM prompts. The testing framework's automated correctness validation and statistical performance analysis provide empirically validated quality assurance. While the current implementation optimizes parameters of existing Triton kernels rather than synthesizing new kernels from scratch, the same closed-loop architecture could be extended to full kernel generation given sufficient context and training. Future work will incorporate automated cost modeling, reinforcement learning techniques and multi-objective optimization to further reduce dependence on manual parameter ranges and improve exploration efficiency.
 
 \section {Results and Evaluation}
 \subsection {Evaluation Setup and Baselines}
@@ -380,7 +324,7 @@ The experimental evaluation successfully validates all core components of the pr
 The testing framework consistently verified correctness and measured performance with statistical rigor, executing five correctness tests and 100 performance runs per configuration. The reporting system generated comprehensive analyses, including parameter impact assessments and stability evaluations. Collectively, these results confirm that the closed-loop architecture operates as designed, enabling automated exploration, validation, and documentation of GPU kernel optimization processes, while also exposing opportunities for further refinement in handling larger input sizes.
 
 \section {Conclusion}
-Automatic GPU kernel generation is a challenging problem that requires both algorithmic insight and hardware-specific knowledge. Peer-reviewed systems such as TVM, FlexTensor and the Halide GPU autoscheduler demonstrate that domain-specific compilers with learned cost models can achieve performance competitive with hand-tuned kernels across multiple hardware backends. However, these systems rely on fixed search spaces and cannot easily invent new implementation patterns. Large language models have the capacity to synthesize novel code but must be grounded through domain knowledge and iterative feedback. A closed-loop architecture that integrates LLMs with compilation, testing and performance measurement can leverage the strengths of both approaches. The modular implementation provided here, featuring isolated kernel code management, automated testing frameworks, persistent knowledge archives and comprehensive reporting systems, demonstrates a robust approach to kernel optimization. The file-based kernel code reading system ensures safe operation while the knowledge archive creates an antifragile system that improves through accumulated experience. This work underscores the importance of combining machine learning, program analysis and human knowledge in the pursuit of efficient kernel generation, while demonstrating that structured feedback loops can effectively guide LLMs toward high-performance solutions.
+Automatic GPU kernel generation is a challenging problem that requires both algorithmic insight and hardware-specific knowledge. Peer-reviewed systems such as TVM, FlexTensor and the Halide GPU autoscheduler demonstrate that domain-specific compilers with learned cost models can achieve performance competitive with hand-tuned kernels across multiple hardware backends. However, these systems rely on fixed search spaces and cannot easily explore additional configurations. Large language models have the capacity to synthesize proposed code but must be grounded through domain knowledge and iterative feedback. A closed-loop architecture that integrates LLMs with compilation, testing and performance measurement can leverage the strengths of both approaches. The modular implementation provided here, featuring isolated kernel code management, automated testing frameworks, persistent knowledge archives and comprehensive reporting systems, demonstrates a empirically validated approach to kernel optimization. The file-based kernel code reading system ensures safe operation while the knowledge archive creates an feedback-driven system that improves through accumulated experience. This work underscores the importance of combining machine learning, program analysis and human knowledge in the pursuit of efficient kernel generation, while demonstrating that structured feedback loops can effectively guide LLMs toward high-performance solutions.
 
 \bibliographystyle{unsrtnat}
 \begin{thebibliography}{6}
