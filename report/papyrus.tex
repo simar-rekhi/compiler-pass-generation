@@ -13,7 +13,6 @@
 \usepackage{graphicx}
 \usepackage{natbib}
 \usepackage{doi}
-\usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{fancyvrb}
 
@@ -23,7 +22,6 @@
 % Additional packages required for the comparative table
 \usepackage{array}   % for m{} column and vertical centering
 \usepackage{float}   % for H table positioning
-\usepackage{xcolor}  % optional: for colored ribbons if desired
 
 \title{Closed-Loop GPU Kernel Optimization Using Large Language Models}
 
@@ -68,7 +66,7 @@
 pdftitle={Closed-Loop GPU Kernel Optimization Using Large Language Models},
 pdfsubject={},
 pdfauthor={Simar Rekhi},
-pdfkeywords={},
+pdfkeywords={GPU kernels, compiler optimization, large language models, Triton, performance tuning}
 }
 
 \begin{document}
@@ -85,15 +83,16 @@ pdfkeywords={},
 \end{abstract}
 
 \section{Introduction}
-Graphics Processing Units (GPUs) underpin many of the performance breakthroughs in machine learning, scientific simulation and data analytics. Efficient GPU kernels are codedly small, optimized small programs that run on these accelerators and are essential to unlocking their computational potential. However, fabricating these high-performance kernels remains notoriously difficult because of relative determinism as well the huge dependence on implementation techniques. Developers must understand intricate hardware details, tune dozens of parameters and account for subtle memory and execution patterns. Compiler frameworks and automatic code generators have steadily improved productivity by transforming high-level knowledge bases into tuned kernels. Yet these systems are bounded by the templates and search spaces they encode. 
+Graphics Processing Units (GPUs) underpin many of the performance breakthroughs in machine learning, scientific simulation and data analytics. Efficient GPU kernels are typically small, highly optimized programs that run on these accelerators and are essential to unlocking their computational potential. However, fabricating these high-performance kernels remains notoriously difficult because of the low-level determinism of GPU execution and the heavy dependence on implementation-specific techniques. Developers must understand intricate hardware details, tune dozens of parameters and account for subtle memory and execution patterns. Compiler frameworks and automatic code generators have steadily improved productivity by transforming high-level knowledge bases into tuned kernels. Yet these systems are bounded by the templates and search spaces they encode. 
 
 In parallel, large language models (LLMs) have emerged as powerful tools for code synthesis and transformation. Their ability to ingest vast quantities of source code suggests a path toward automated kernel generation without hand-crafted heuristics. Initial experiments have shown that LLMs can produce plausible GPU kernels, but they often lack the specialized domain knowledge required for true high performance and are prone to producing incorrect or sub-optimal code. Moreover, current approaches typically treat code generation as a one-shot problem, omitting the iterative refinement and feedback that expert programmers rely on when tuning kernels. 
 
 
-\section{Background and Related Work}
+\section{Related Work}
 The following peer-reviewed papers provide representative approaches to automatic GPU kernel generation. TVM (OSDI 2018) introduces a tensor compiler that automatically generates optimized code for diverse hardware by combining graph‑level and operator‑level transformations with a learned cost model. FlexTensor (ASPLOS 2020) explores a larger schedule space using heuristic and machine‑learning techniques, achieving notable speedups on CPUs, GPUs and FPGAs. The Halide GPU autoscheduler (OOPSLA 2021) focuses on imaging pipelines, using a two‑phase search, hierarchical sampling and memoization to produce high‑performance schedules without templates. 
 
 \subsection{Comparative Features}
+Table~1 summarizes key differences between representative compiler-based kernel optimization frameworks and highlights the role of learned cost models and search strategies.\newline
 
 \begin{table}[H]
 \centering
@@ -143,11 +142,11 @@ The scope of this work is intentionally constrained. The proposed framework targ
 \section{Proposed Approach}
 \subsection{Motivation}
 
-Languages models can synthesize GPU kernel code but often lack the domain knowledge to ensure correctness and performance. A closed-loop system can compensate by incorporating program analysis, compilation and feedback. The literature highlights several ideas to borrow: 
+Large language models can synthesize GPU kernel code but often lack the domain knowledge to ensure correctness and performance. A closed-loop system can compensate by incorporating program analysis, compilation and feedback. The literature highlights several ideas to borrow: 
 \begin{itemize}
-    \item {Constructing rich search space of transformations}
+    \item {Constructing a rich search space of transformations}
     \item{Using cost models trained on past executions}
-    \item{Separating hardware-independent specifications from hardware-specific schedules. Our proposed design integrated these concepts with LLMs. }
+    \item{Separating hardware-independent specifications from hardware-specific schedules. Our proposed design integrates these concepts with LLMs. }
 \end{itemize}
 
 \subsection{Architecture Overview}
@@ -195,11 +194,12 @@ The closed loop comprises the following stages:
     \item {\textbf{Termination and Reporting:} Continue loop for specified maximum iterations or until speedup threshold is achieved (e.g., 2x speedup). Early stopping prevents wasted computation once diminishing returns are reached. Generate comprehensive optimization report including best configuration, parameter impact analysis, stability assessment across input sizes and optimization statistics.}
 \end{enumerate}
 
+
 \graphicspath{{}}
  \begin{figure}[htbp]
         \centering
-        \includegraphics[width=0.8\textwidth]{unnamed.jpg}
-        \caption{Visualization of the Proposed Closed-loop Workflow}
+        \includegraphics[width=0.8\textwidth]{closed_loop.png}
+        \caption{Illustrates the end-to-end closed-loop workflow and the interaction between system components.}
         \label{fig:visual}
     \end{figure}
 
@@ -284,7 +284,9 @@ The matrix multiplication kernel is parameterized by block sizes in the M, N, an
 
 \subsection{Optimization Results}
 
-For the matrix multiplication kernel, the baseline Triton configuration with default parameters achieved performance comparable to PyTorch but left substantial room for improvement. Across optimization iterations, the LLM proposed diverse parameter configurations exploring variations in block sizes, warp counts, grouping strategies, and pipeline depth. Within three to five iterations, the system identified configurations yielding speedups between 2$\times$ and 3$\times$ over the baseline implementation.
+Unless otherwise stated, all reported speedups are computed relative to the default Triton baseline configuration, not the PyTorch reference implementation.\newline
+
+For the matrix multiplication kernel, the baseline Triton configuration with default parameters achieved performance comparable to PyTorch but left substantial room for improvement. Across optimization iterations, the LLM proposed diverse parameter configurations exploring variations in block sizes, warp counts, grouping strategies, and pipeline depth. Within three to five iterations, the system identified configurations yielding speedups between 2$\times$ and 3$\times$ over the default Triton baseline.
 
 Successful configurations typically increased BLOCK\_SIZE\_M and BLOCK\_SIZE\_N while selecting warp counts that balanced occupancy and register pressure. Pipeline stages were adjusted to maximize arithmetic intensity without introducing numerical instability. The persistent knowledge archive enabled the optimizer to avoid previously unsuccessful configurations and focus exploration on promising regions of the parameter space.
 
@@ -292,7 +294,7 @@ For the softmax kernel, performance improvements were more modest due to a small
 
 \subsection{Stability and Generalization}
 
-To assess stability, the best-performing configurations were evaluated across varying input sizes. For matrix multiplication, the optimized configuration demonstrated correct execution and improved performance for a $512 \times 512 \times 512$ problem size, achieving a speedup of approximately 0.199$\times$ relative to the baseline. However, the same configuration failed correctness checks for larger input sizes, including $1024 \times 1024 \times 1024$, $2048 \times 2048 \times 2048$, and $4096 \times 4096 \times 4096$.
+To assess stability, the best-performing configurations were evaluated across varying input sizes. For matrix multiplication, the optimized configuration demonstrated correct execution and improved performance for a $512 \times 512 \times 512$ problem size, achieving a speedup of approximately 0.199× relative to the default Triton baseline. However, the same configuration failed correctness checks for larger input sizes, including $1024 \times 1024 \times 1024$, $2048 \times 2048 \times 2048$, and $4096 \times 4096 \times 4096$.
 
 These results indicate that while the closed-loop system can effectively optimize kernels for specific input regimes, parameter configurations do not necessarily generalize across problem sizes without additional tuning. This limitation highlights the inherent difficulty of achieving performance portability and motivates future work on input-size-aware optimization and multi-objective tuning strategies.
 
@@ -302,7 +304,7 @@ The experimental results demonstrate that integrating large language models into
 
 The persistent knowledge archive plays a central role in guiding exploration, enabling the system to learn from prior successes and failures across optimization runs. While the current implementation focuses on parameter optimization for existing Triton kernels, the observed improvements suggest that LLMs can serve as effective decision-making agents when embedded within structured, feedback-driven systems. The limitations observed in generalization underscore the need for further research into adaptive parameterization and cross-input optimization, but do not diminish the effectiveness of the proposed approach within constrained optimization settings.\newline 
 
-Compared with purely-search based compilers like TVM or FlexTensor, the LLM-assisted system offers several advantages. The LLM can synthesize parameter combinations that may lie outside predetermined search spaces, drawing on its training data that includes diverse optimization patterns. By providing complete kernel source code, hardware characteristics and optimization history in structured prompts, the LLM can apply domain knowledge about memory coalescing, occupancy optimization and pipeline tuning. The closed loop ensures that incorrect suggestions are detected early through compilation and correctness testing before performance measurement, preventing wasted computation. A reward signal based on measured speedup encourages the LLM to focus on performance improvements in subsequent iterations. The persistent knowledge archive continuously expands with each optimization run, enabling future sessions to learn from past successes and failures, creating an feedback-driven system that improves over time. The modular architecture with isolated kernel code reading, dedicated testing framework and comprehensive reporting enable a more adaptive and empirically grounded kernel optimization process. 
+Compared with purely-search based compilers like TVM or FlexTensor, the LLM-assisted system offers several advantages. The LLM can synthesize parameter combinations that may lie outside predetermined search spaces, drawing on its training data that includes diverse optimization patterns. By providing complete kernel source code, hardware characteristics and optimization history in structured prompts, the LLM can apply domain knowledge about memory coalescing, occupancy optimization and pipeline tuning. The closed loop ensures that incorrect suggestions are detected early through compilation and correctness testing before performance measurement, preventing wasted computation. Measured speedup acts as an explicit feedback signal that guides subsequent LLM parameter suggestions. The persistent knowledge archive continuously expands with each optimization run, enabling future sessions to learn from past successes and failures, creating an feedback-driven system that improves over time. The modular architecture with isolated kernel code reading, dedicated testing framework and comprehensive reporting enable a more adaptive and empirically grounded kernel optimization process. 
 
 \section{Limitations and Future Scope}
 
@@ -321,7 +323,7 @@ Despite these limitations, the framework establishes a foundation for integratin
 
 
 \section {Conclusion}
-Automatic GPU kernel generation is a challenging problem that requires both algorithmic insight and hardware-specific knowledge. Peer-reviewed systems such as TVM, FlexTensor and the Halide GPU autoscheduler demonstrate that domain-specific compilers with learned cost models can achieve performance competitive with hand-tuned kernels across multiple hardware backends. However, these systems rely on fixed search spaces and cannot easily explore additional configurations. Large language models have the capacity to synthesize proposed code but must be grounded through domain knowledge and iterative feedback. A closed-loop architecture that integrates LLMs with compilation, testing and performance measurement can leverage the strengths of both approaches. The modular implementation provided here, featuring isolated kernel code management, automated testing frameworks, persistent knowledge archives and comprehensive reporting systems, demonstrates a empirically validated approach to kernel optimization. The file-based kernel code reading system ensures safe operation while the knowledge archive creates an feedback-driven system that improves through accumulated experience. This work underscores the importance of combining machine learning, program analysis and human knowledge in the pursuit of efficient kernel generation, while demonstrating that structured feedback loops can effectively guide LLMs toward high-performance solutions.
+Automatic GPU kernel generation is a challenging problem that requires both algorithmic insight and hardware-specific knowledge. Peer-reviewed systems such as TVM, FlexTensor and the Halide GPU autoscheduler demonstrate that domain-specific compilers with learned cost models can achieve performance competitive with hand-tuned kernels across multiple hardware backends. However, these systems rely on fixed search spaces and cannot easily explore additional configurations. Large language models have the capacity to synthesize proposed code but must be grounded through domain knowledge and iterative feedback. A closed-loop architecture that integrates LLMs with compilation, testing and performance measurement can leverage the strengths of both approaches. The modular implementation provided here, featuring isolated kernel code management, automated testing frameworks, persistent knowledge archives and comprehensive reporting systems, demonstrates an empirically validated approach to kernel optimization. The file-based kernel code reading system ensures safe operation while the knowledge archive creates a feedback-driven system that improves through accumulated experience. This work underscores the importance of combining machine learning, program analysis and human knowledge in the pursuit of efficient kernel generation, while demonstrating that structured feedback loops can effectively guide LLMs toward high-performance solutions.
 
 \bibliographystyle{unsrtnat}
 \begin{thebibliography}{6}
@@ -346,12 +348,7 @@ Ian~C.~Anderson, Tianqi~Chen, William~Moses, Amara~Henao, Joshua~Triplett, Chiyu
 \bibitem{rekhi2025compiler}
 Simar~Rekhi.
 \newblock Compiler Pass Generation – Triton Kernel Optimizer.
-\newblock GitHub repository, 2025. Available at \url{https://github.com/simar-rekhi/compiler-pass-generation}.
-
-\bibitem{gmicloud2025freegpu}
-GMI~Cloud.
-\newblock Where Can I Get Free GPU Cloud Trials in 2025? A Complete Guide.
-\newblock Blog post, 2025. Available at \url{https://www.gmicloud.ai/blog/where-can-i-get-free-gpu-cloud-trials-in-2025-a-complete-guide} (accessed 22~Nov~2025).
+\newblock GitHub repository, accessed 2025. Available at \url{https://github.com/simar-rekhi/compiler-pass-generation}.
 
 \end{thebibliography}
 \end{document}
