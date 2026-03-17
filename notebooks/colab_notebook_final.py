@@ -48,8 +48,8 @@ print("="*60)
 print("Verifying Kernel Source Files")
 print("="*60)
 
-matmul_path = Path("triton_kernels/matmul.py")
-softmax_path = Path("triton_kernels/softmax.py")
+matmul_path = Path("src/compiler_pass_generation/raw_kernels/matmul.py")
+softmax_path = Path("src/compiler_pass_generation/raw_kernels/softmax.py")
 
 print(f"Matmul kernel file exists: {matmul_path.exists()}")
 print(f"Softmax kernel file exists: {softmax_path.exists()}")
