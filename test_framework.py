@@ -4,7 +4,7 @@ import numpy as np
 import time
 from typing import Tuple, Dict, Callable, Any, Optional
 from src.compiler_pass_generation.baseline import benchmark_baseline
-from triton_kernels import triton_matmul, triton_softmax
+from raw_kernels import triton_matmul, triton_softmax
 
 class TestFramework:
     """Framework for testing kernel correctness and performance."""

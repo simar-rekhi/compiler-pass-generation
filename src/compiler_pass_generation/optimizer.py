@@ -10,7 +10,7 @@ from compiler_pass_generation.llm_optimizer import LLMOptimizer
 # Don't import get_kernel_code at module level - import it lazily inside optimize()
 # This avoids triggering any inspection during module import
 from compiler_pass_generation.reporter import Reporter
-from triton_kernels import (
+from raw_kernels import (
     triton_matmul,
     triton_softmax,
     get_tunable_matmul_params,
