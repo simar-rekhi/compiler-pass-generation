@@ -10,7 +10,7 @@ def get_kernel_code(kernel_name: str) -> str:
     Reads from triton_kernels/{kernel_name}.py
     Uses basic file I/O to avoid any inspection issues.
     """
-    file_path = f"triton_kernels/{kernel_name}.py"
+    file_path = f"src/compiler_pass_generation/raw_kernels/{kernel_name}.py"
     
     try:
         # Use basic file operations to avoid any pathlib/inspect issues
