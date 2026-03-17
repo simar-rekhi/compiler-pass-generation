@@ -6,9 +6,7 @@
 
 # If the repo folder exists, update it; otherwise clone it
 import os, subprocess, sys
-sys.path.append(os.path.abspath("src"))
-sys.path.append(os.path.abspath("tests"))
-sys.path.append(os.path.abspath("src/compiler_pass_generation")) # Catch-all for legacy imports
+sys.path.append(os.path.abspath("/content/compiler-pass-generation"))
 
 if os.path.isdir("compiler-pass-generation"):
     %cd compiler-pass-generation
@@ -18,6 +16,10 @@ else:
     %cd compiler-pass-generation
 
 !ls
+sys.path.append(os.path.abspath("/content/compiler-pass-generation"))
+sys.path.append(os.path.abspath("src"))
+sys.path.append(os.path.abspath("tests"))
+sys.path.append(os.path.abspath("src/compiler_pass_generation")) # Catch-all for legacy imports
 
 # Install dependencies
 !pip install -q torch triton==3.5.0 numpy openai pydantic pyyaml tqdm
