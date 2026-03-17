@@ -4,13 +4,13 @@ Main optimization loop that ties everything together.
 import torch
 from pathlib import Path
 from typing import Dict, Any, Optional, List
+
+# Absolute imports from the project root
 from tests.test_framework import TestFramework
-from compiler_pass_generation.knowledge_archive import KnowledgeArchive
-from compiler_pass_generation.llm_optimizer import LLMOptimizer
-# Don't import get_kernel_code at module level - import it lazily inside optimize()
-# This avoids triggering any inspection during module import
-from compiler_pass_generation.reporter import Reporter
-from raw_kernels import (
+from src.compiler_pass_generation.knowledge_archive import KnowledgeArchive
+from src.compiler_pass_generation.llm_optimizer import LLMOptimizer
+from src.compiler_pass_generation.reporter import Reporter
+from src.compiler_pass_generation.triton_kernels import (
     triton_matmul,
     triton_softmax,
     get_tunable_matmul_params,
@@ -18,7 +18,6 @@ from raw_kernels import (
     get_default_matmul_params,
     get_default_softmax_params,
 )
-
 
 class KernelOptimizer:
     """Main optimizer that orchestrates the optimization process."""
