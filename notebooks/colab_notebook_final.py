@@ -138,7 +138,7 @@ try:
         print(f"Iterations: {results.get('iterations', 'N/A')}")
         
         # Check archive
-        from compiler_pass_generation.knowledge_archive import KnowledgeArchive
+        from src.compiler_pass_generation.knowledge_archive import KnowledgeArchive
         archive = KnowledgeArchive()
         stats = archive.get_statistics("matmul")
         print(f"\nOptimization Statistics:")
