@@ -6,7 +6,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pathlib import Path
 from compiler_pass_generation.knowledge_archive import KnowledgeArchive
-from test_framework import TestFramework
+from tests.test_framework import TestFramework
 
 
 class Reporter:

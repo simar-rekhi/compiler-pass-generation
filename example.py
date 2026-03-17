@@ -4,7 +4,7 @@ Example script demonstrating how to use the optimization framework.
 import os
 import torch
 from src.compiler_pass_generation.optimizer import KernelOptimizer
-from test_framework import TestFramework
+from tests.test_framework import TestFramework
 from compiler_pass_generation.knowledge_archive import KnowledgeArchive
 from compiler_pass_generation.raw_kernels import get_default_matmul_params, get_default_softmax_params
 

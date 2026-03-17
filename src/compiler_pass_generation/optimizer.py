@@ -4,7 +4,7 @@ Main optimization loop that ties everything together.
 import torch
 from pathlib import Path
 from typing import Dict, Any, Optional, List
-from test_framework import TestFramework
+from tests.test_framework import TestFramework
 from compiler_pass_generation.knowledge_archive import KnowledgeArchive
 from compiler_pass_generation.llm_optimizer import LLMOptimizer
 # Don't import get_kernel_code at module level - import it lazily inside optimize()

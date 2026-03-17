@@ -6,7 +6,7 @@ import sys
 import torch
 from pathlib import Path
 from compiler_pass_generation.llm_optimizer import get_kernel_code
-from test_framework import TestFramework
+from tests.test_framework import TestFramework
 from compiler_pass_generation.raw_kernels import get_default_matmul_params
 
 
