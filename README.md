@@ -1,5 +1,5 @@
 # Compiler Pass Generation / LLM‑Assisted Triton Kernel Optimization
-This repository contains the research code behind my work on closed‑loop GPU kernel optimization using large language models (LLMs). It implements a modular framework that couples parameterized Triton kernels with a testing harness, an optimization loop and a persistent knowledge archive. The goal is to automatically discover kernel parameters that improve performance over the default Triton implementations while maintaining correctness. A detailed description of the approach and experimental results is provided in the accompanying research paper in <>
+This repository contains the research code behind my work on closed‑loop GPU kernel optimization using large language models (LLMs). It implements a modular framework that couples parameterized Triton kernels with a testing harness, an optimization loop and a persistent knowledge archive. The goal is to automatically discover kernel parameters that improve performance over the default Triton implementations while maintaining correctness. A detailed description of the approach and experimental results is provided in the accompanying research paper in `docs/papyrus.tex`
 
 # Motivation
 Modern GPUs expose many low‑level tuning knobs (block sizes, warp counts, pipeline stages, etc.). Achieving near‑optimal performance requires expert knowledge and time‑consuming manual exploration. Compiler frameworks like TVM and FlexTensor build learned cost models but still rely on predefined search spaces. Large language models can synthesize code, yet one‑shot generation often produces inefficient or incorrect kernels. This project explores a closed‑loop alternative: instead of asking the LLM to write kernels, I treat the LLM as a decision‑maker over a parameter space. The framework measures performance, checks correctness and feeds structured feedback to the LLM to iteratively refine kernel parameters.
@@ -20,11 +20,11 @@ The closed loop repeats the following stages until either a speedup target is re
 4. **Parameter suggestion** – Ask the LLM for a new set of parameters. Validate the suggestion against allowable ranges and adjust to the nearest valid values.
 5. **Compilation and execution** – Compile the Triton kernel with the proposed parameters and execute it on representative inputs. Measure runtime and compute speedup relative to the baseline.
 6. **Correctness verification** – Compare the kernel output against the PyTorch baseline and record whether the numerical error is within tolerance.
-7. **Archival and feedback **– Append the attempt to the knowledge archive. If the configuration improves on the best known speedup and is correct, update the best configuration; otherwise revert to the previous best. Use the results to inform the next prompt.
+7. **Archival and feedback** – Append the attempt to the knowledge archive. If the configuration improves on the best known speedup and is correct, update the best configuration; otherwise revert to the previous best. Use the results to inform the next prompt.
 8. **Reporting** – After the loop finishes, use the Reporter to generate a comprehensive report with stability analysis and parameter impact summaries.
 
 # Repository Structure
-.
+````
 ├── src/compiler_pass_generation/
 │   ├── baseline.py              # PyTorch reference implementations and benchmarking helpers
 │   ├── triton_kernels.py        # Parameterized Triton kernels and tuning helpers
@@ -48,23 +48,23 @@ The closed loop repeats the following stages until either a speedup target is re
 ├── notebooks/                   # Optional Jupyter/Colab notebooks illustrating usage
 └── requirements.txt             # Python dependencies
 
-
+````
 # Installation
-1. Clone this repo
-   git clone https://github.com/simar-rekhi/compiler-pass-generation.git
-   cd compiler-pass-generation
-3. Create a Python env.
-  python -m venv .venv
-  source .venv/bin/activate
-4. Install dependencies. The project relies on PyTorch, Triton, and optional libraries for LLM access. You can install the minimal requirements via:
-  pip install -r requirements.txt
-5. Verify installation by running the test suite (GPU optional):
-  pytest -q
+1. Clone this repo <br>
+   ````git clone https://github.com/simar-rekhi/compiler-pass-generation.git```` <br>
+   ````cd compiler-pass-generation````
+2. Create a Python env. <br>
+  ````python -m venv .venv````  <br>
+  ````source .venv/bin/activate```` <br>
+3. Install dependencies. The project relies on PyTorch, Triton, and optional libraries for LLM access. You can install the minimal requirements via: <br>
+  ````pip install -r requirements.txt```` <br>
+4. Verify installation by running the test suite (GPU optional): <br>
+  ````pytest -q```` <br>
 
 
 # Quick Start
 The examples `/example.py` script demonstrates how to test kernels, run the optimizer and inspect the knowledge archive. You can execute it with 
-  python examples/example.py
+  ````python examples/example.py````
 
 # Research paper
 For a thorough explanation of the methodology, design decisions, evaluation metrics and limitations of this work, please see the paper in  `docs/papyrus.tex`. The paper compares this approach with related compiler frameworks (TVM, FlexTensor, Halide) and includes quantitative results. It also describes the closed‑loop workflow in detail, outlines the experimental setup, and discusses challenges such as generalization across input sizes and integration with learned cost models.
