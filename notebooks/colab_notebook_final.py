@@ -77,9 +77,9 @@ print(f"Matmul code loaded: {len(matmul_code) > 0} ({len(matmul_code)} chars)")
 print(f"Softmax code loaded: {len(softmax_code) > 0} ({len(softmax_code)} chars)")
 
 if not matmul_code:
-    print("ERROR: Failed to load matmul kernel code! Check that triton_kernels/matmul.py exists.")
+    print("ERROR: Failed to load matmul kernel code! Check that src/compiler_pass_generation/raw_kernels/matmul.py exists.")
 if not softmax_code:
-    print("ERROR: Failed to load softmax kernel code! Check that triton_kernels/softmax.py exists.")
+    print("ERROR: Failed to load softmax kernel code! Check that src/compiler_pass_generation/raw_kernels/softmax.py exists.")
 
 if not matmul_code or not softmax_code:
     print("\n⚠️  WARNING: Kernel code loading failed. Optimization may not work correctly.")
