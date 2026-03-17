@@ -1,19 +1,15 @@
-"""
-Isolated kernel code reader - no imports from triton_kernels.
-This module only reads files and never imports anything that could trigger JITFunction inspection.
-"""
-
+import os
 
 def get_kernel_code(kernel_name: str) -> str:
     """
     Get kernel source code from file.
-    Reads from triton_kernels/{kernel_name}.py
-    Uses basic file I/O to avoid any inspection issues.
+    Reads from raw_kernels/{kernel_name}.py
     """
-    file_path = f"src/compiler_pass_generation/raw_kernels/{kernel_name}.py"
+    # Dynamically find the path relative to this file
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(current_dir, "raw_kernels", f"{kernel_name}.py")
     
     try:
-        # Use basic file operations to avoid any pathlib/inspect issues
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
@@ -22,4 +18,3 @@ def get_kernel_code(kernel_name: str) -> str:
     except Exception as e:
         print(f"Error reading kernel source file {file_path}: {e}")
         return ""
-
