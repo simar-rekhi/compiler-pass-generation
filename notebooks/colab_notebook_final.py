@@ -6,6 +6,9 @@
 
 # If the repo folder exists, update it; otherwise clone it
 import os, subprocess, sys
+sys.path.append(os.path.abspath("src"))
+sys.path.append(os.path.abspath("tests"))
+sys.path.append(os.path.abspath("src/compiler_pass_generation")) # Catch-all for legacy imports
 
 if os.path.isdir("compiler-pass-generation"):
     %cd compiler-pass-generation
