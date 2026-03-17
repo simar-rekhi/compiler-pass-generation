@@ -57,7 +57,7 @@ print("Testing Kernel Code Loading")
 print("="*60)
 
 # Import from isolated module to avoid any JITFunction inspection issues
-from kernel_code_reader import get_kernel_code
+from compiler_pass_generation.kernel_code_reader import get_kernel_code
 
 # Test kernel code loading (this will be used by the optimizer)
 matmul_code = get_kernel_code("matmul")
@@ -128,7 +128,7 @@ try:
         print(f"Iterations: {results.get('iterations', 'N/A')}")
         
         # Check archive
-        from knowledge_archive import KnowledgeArchive
+        from compiler_pass_generation.knowledge_archive import KnowledgeArchive
         archive = KnowledgeArchive()
         stats = archive.get_statistics("matmul")
         print(f"\nOptimization Statistics:")

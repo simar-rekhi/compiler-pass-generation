@@ -5,11 +5,11 @@ import torch
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from test_framework import TestFramework
-from knowledge_archive import KnowledgeArchive
-from llm_optimizer import LLMOptimizer
+from compiler_pass_generation.knowledge_archive import KnowledgeArchive
+from compiler_pass_generation.llm_optimizer import LLMOptimizer
 # Don't import get_kernel_code at module level - import it lazily inside optimize()
 # This avoids triggering any inspection during module import
-from reporter import Reporter
+from compiler_pass_generation.reporter import Reporter
 from triton_kernels import (
     triton_matmul,
     triton_softmax,
@@ -79,7 +79,7 @@ class KernelOptimizer:
         current_params = self.get_default_params()
         # Import get_kernel_code lazily and wrap in try/except to avoid any inspection issues
         try:
-            from kernel_code_reader import get_kernel_code
+            from compiler_pass_generation.kernel_code_reader import get_kernel_code
             kernel_code = get_kernel_code(self.kernel_name)
         except Exception as e:
             print(f"Warning: Could not load kernel code: {e}")

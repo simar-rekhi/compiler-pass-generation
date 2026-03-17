@@ -5,7 +5,7 @@ import os
 import sys
 import torch
 from pathlib import Path
-from llm_optimizer import get_kernel_code
+from compiler_pass_generation.llm_optimizer import get_kernel_code
 from test_framework import TestFramework
 from triton_kernels import get_default_matmul_params
 

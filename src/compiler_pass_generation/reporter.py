@@ -5,7 +5,7 @@ import json
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pathlib import Path
-from knowledge_archive import KnowledgeArchive
+from compiler_pass_generation.knowledge_archive import KnowledgeArchive
 from test_framework import TestFramework
 
 
