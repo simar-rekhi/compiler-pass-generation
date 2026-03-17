@@ -5,10 +5,18 @@ import os
 import sys
 import torch
 from pathlib import Path
-from compiler_pass_generation.llm_optimizer import get_kernel_code
 from tests.test_framework import TestFramework
-from compiler_pass_generation.raw_kernels import get_default_matmul_params
-
+from src.compiler_pass_generation.knowledge_archive import KnowledgeArchive
+from src.compiler_pass_generation.llm_optimizer import LLMOptimizer
+from src.compiler_pass_generation.reporter import Reporter
+from src.compiler_pass_generation.triton_kernels import (
+    triton_matmul,
+    triton_softmax,
+    get_tunable_matmul_params,
+    get_tunable_softmax_params,
+    get_default_matmul_params,
+    get_default_softmax_params,
+)
 
 def test_kernel_code_loading():
     """Test that kernel code can be loaded from files."""
