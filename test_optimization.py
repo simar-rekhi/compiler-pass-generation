@@ -80,7 +80,7 @@ def test_full_optimization_flow():
     print("Test 3: Full Optimization Flow (2 iterations)")
     print("=" * 60)
     
-    from optimizer import KernelOptimizer
+    from src.compiler_pass_generation.optimizer import KernelOptimizer
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")

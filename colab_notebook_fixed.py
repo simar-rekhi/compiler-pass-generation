@@ -94,7 +94,7 @@ print("\n" + "="*60)
 print("Initializing Optimizer")
 print("="*60)
 
-from optimizer import KernelOptimizer
+from src.compiler_pass_generation.optimizer import KernelOptimizer
 
 # Create optimizer instance
 opt = KernelOptimizer(

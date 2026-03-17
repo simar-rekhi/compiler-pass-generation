@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import time
 from typing import Tuple, Dict, Callable, Any, Optional
-from baseline import benchmark_baseline
+from src.compiler_pass_generation.baseline import benchmark_baseline
 from triton_kernels import triton_matmul, triton_softmax
 
 class TestFramework:
