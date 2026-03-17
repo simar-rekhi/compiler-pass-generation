@@ -7,7 +7,7 @@ import torch
 from pathlib import Path
 from compiler_pass_generation.llm_optimizer import get_kernel_code
 from test_framework import TestFramework
-from raw_kernels import get_default_matmul_params
+from compiler_pass_generation.raw_kernels import get_default_matmul_params
 
 
 def test_kernel_code_loading():
