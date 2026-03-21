@@ -19,6 +19,11 @@
 % Hyperref usually works best when loaded last in the preamble
 \usepackage{hyperref}       % hyperlinks
 
+% Remove "Preprint. Under review." footer added by arxiv.sty
+\renewcommand{\headeright}{}
+\renewcommand{\undertitle}{}
+\renewcommand{\shorttitle}{}
+
 \definecolor{mycodecolor}{RGB}{34,139,34}
 \fvset{formatcom=\color{mycodecolor}}
 
